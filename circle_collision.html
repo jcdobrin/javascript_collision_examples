@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Axis Example</title>
+	</head>
+	<body>
+		<canvas id="canvas" width="800" height="600"></canvas>
+		<div style="position:absolute;right:10px;top:10px;">
+			<input type="text" id="radius1" value="50"><br>
+			<input type="text" id="radius2" value="130"><br>
+		</div>
+		<script>
+			var canvas = document.getElementById('canvas');
+			var context = canvas.getContext("2d");
+			var rad1 = document.getElementById('radius1');
+			var rad2 = document.getElementById('radius2');
+
+			var mousePos = [-1, -1];
+			var c1 = {
+				radius: parseInt(rad1.value),
+				position: [-100,-100]
+			};
+
+			var c2 = {
+				radius: parseInt(rad2.value),
+				position: [100,100]
+			};
+
+			var selected = false;
+
+			function collision(p1, r1, p2, r2)
+			{
+				var dstSq = Math.pow((p1[0] - p2[0]),2) + Math.pow((p1[1] - p2[1]),2);
+				var radSq = Math.pow((r1 + r2),2);
+				return (dstSq <= radSq);
+			}
+
+			function handleMouseMove(e)
+			{
+				if(selected)
+				{
+					if(mousePos[0] > 0)
+					{
+						selected.position[0] -= mousePos[0] - e.pageX;
+						selected.position[1] -= mousePos[1] - e.pageY;
+					}
+					mousePos = [e.pageX, e.pageY];
+				}
+			}
+
+			function checkMouseDown(event)
+			{
+				var pos = [
+					event.clientX - 400,
+					event.clientY - 300
+				];
+
+				if(collision(c1.position, c1.radius, pos, 5))
+				{
+					selected = c1;
+				}
+				else if(collision(c2.position, c2.radius, pos, 5))
+				{
+					selected = c2;
+				}
+				else
+				{
+					selected = false;
+				}
+			}
+
+			function normalize(v)
+			{
+				var temp = [0,0];
+				var mag = Math.sqrt((v[0]*v[0]) + (v[1]*v[1]));
+				temp[0] = v[0] / mag;
+				temp[1] = v[1] / mag;
+				return temp;
+			}
+
+			function drawAxis(c1, c2)
+			{
+				var p1 = c1.position;
+				var p2 = c2.position;
+				var slope = normalize([(p1[0] - p2[0]), (p1[1] - p2[1])]);
+
+				context.beginPath();
+				context.strokeStyle = '#000';
+				context.lineWidth = 6;
+				context.moveTo(c1.position[0], c1.position[1]);
+				context.lineTo(c2.position[0], c2.position[1]);
+				context.stroke();
+				context.closePath();
+
+				var minX = Math.min(c1.position[0], c2.position[0]);
+				var maxX = Math.max(c1.position[0], c2.position[0]);
+
+				var minY = Math.min(c1.position[1], c2.position[1]);
+				var maxY = Math.max(c1.position[1], c2.position[1]);
+
+				context.beginPath();
+				context.strokeStyle = '#CCC';
+				context.lineWidth = 5
+				context.setLineDash([15, 15]);
+				if(c1.position[0] < c2.position[0])
+				{
+					if(c1.position[1] < c2.position[1])
+					{
+						context.moveTo(minX, minY);
+						context.lineTo(minX, maxY);
+						context.lineTo(maxX, maxY);
+					}
+					else
+					{
+						context.moveTo(maxX, minY);
+						context.lineTo(minX, minY);
+						context.lineTo(minX, maxY);
+
+					}
+				}
+				else
+				{
+					if(c1.position[1] < c2.position[1])
+					{
+						context.moveTo(minX, maxY);
+						context.lineTo(maxX, maxY);
+						context.lineTo(maxX, minY);
+					}
+					else
+					{
+						context.moveTo(minX, minY);
+						context.lineTo(maxX, minY);
+						context.lineTo(maxX, maxY);
+
+					}
+				}
+				context.stroke();
+				context.setLineDash([]);
+				context.closePath();
+
+				context.beginPath();
+				context.strokeStyle = '#000';
+				context.lineWidth = 10;
+				context.moveTo(c1.position[0], c1.position[1]);
+				context.lineTo(c2.position[0], c2.position[1]);
+				context.stroke();
+				context.closePath();
+
+				context.beginPath();
+				context.strokeStyle = '#00F';
+				context.lineWidth = 10;
+				context.moveTo(c1.position[0], c1.position[1]);
+				context.lineTo(c1.position[0] - (c1.radius * slope[0]), c1.position[1] - (c1.radius * slope[1]));
+				context.stroke();
+				context.closePath();
+
+
+				context.beginPath();
+				context.strokeStyle = '#0F0';
+				context.lineWidth = 10;
+				context.moveTo(c2.position[0], c2.position[1]);
+				context.lineTo(c2.position[0] +(c2.radius * slope[0]), c2.position[1] + (c2.radius * slope[1]));
+				context.stroke();
+				context.closePath();
+			}
+
+			function drawCircle(c, color)
+			{
+				context.beginPath();
+				context.strokeStyle = color;
+				context.lineWidth = 10;
+				var r = Math.max(c.radius-5, 0);
+				context.arc(c.position[0],c.position[1],r,0,2*Math.PI);
+				context.stroke();
+				context.closePath();
+
+			}
+
+			function draw()
+			{
+				c1.radius = parseInt(rad1.value);
+				c2.radius = parseInt(rad2.value);
+				context.save();
+				context.clearRect(0,0,800,600);
+				context.translate(400,300);
+				var color = '#AAA';
+				if(collision(c1.position, c1.radius, c2.position, c2.radius))
+				{
+					color = '#F00';
+				}
+				drawCircle(c1, color);
+				drawCircle(c2, color);
+
+
+				context.beginPath();
+				context.strokeStyle = '#00F';
+				context.lineWidth = 10;
+				context.moveTo(0, -295);
+				context.lineTo(c1.radius, -295);
+				context.stroke();
+				context.closePath();
+
+				context.beginPath();
+				context.strokeStyle = '#0F0';
+				context.lineWidth = 10;
+				context.moveTo(c1.radius, -295);
+				context.lineTo(c1.radius+c2.radius, -295);
+				context.stroke();
+				context.closePath();
+
+
+				var p1 = c1.position;
+				var p2 = c2.position;
+				var dist = Math.sqrt(Math.pow((p1[0] - p2[0]),2) + Math.pow((p1[1] - p2[1]),2));
+				context.beginPath();
+				context.strokeStyle = '#000';
+				context.lineWidth = 10;
+				context.moveTo(0, -285);
+				context.lineTo(dist, -285);
+				context.stroke();
+				context.closePath();
+
+				drawAxis(c1, c2);
+
+				context.restore();
+				requestAnimationFrame(draw);
+			}
+			draw();
+
+			document.onmousemove = handleMouseMove;
+			document.getElementById('canvas').onmousedown = checkMouseDown;
+			document.onmouseup = function(){selected = false;mousePos = [-1, -1];}
+		</script>
+	</body>
+</html>
